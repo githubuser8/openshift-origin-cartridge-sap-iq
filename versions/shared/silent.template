@@ -1,0 +1,63 @@
+#Validate Response File
+#----------------------
+RUN_SILENT=true
+
+#Choose Install Folder
+#---------------------
+USER_INSTALL_DIR=
+
+#Install older version
+#---------------------
+
+#Choose Update Install Option
+#----------------------------
+DO_UPDATE_INSTALL=false
+
+#Choose Install Set
+#------------------
+CHOSEN_FEATURE_LIST=fjconnect70,fiq_client_common,fiq_odbc,fiq_server,fconn_add_lm,fsysam_util,fiq_shared,fiq_client_web,fiq_agent,fiq_scc,fiq_map
+CHOSEN_INSTALL_FEATURE_LIST=fjconnect70,fiq_client_common,fiq_odbc,fiq_server,fconn_add_lm,fsysam_util,fiq_shared,fiq_client_web,fiq_agent,fiq_scc,fiq_map
+CHOSEN_INSTALL_SET=Typical
+
+#Choose Product License Type
+#---------------------------
+SYBASE_PRODUCT_LICENSE_TYPE=license
+
+#Choose SYSAM Product Edtion and License Type
+#--------------------------------------------
+SYSAM_PRODUCT_EDITION=Express Edition (XE)
+SYSAM_LICENSE_TYPE=Unknown
+SYSAM_LICENSE_SOURCE=proceed_without_license
+AGREE_TO_SYBASE_LICENSE=true
+
+#Software Asset Management Notification Setting
+#----------------------------------------------
+SYSAM_NOTIFICATION_ENABLE=false
+SYSAM_NOTIFICATION_SMTP_HOSTNAME=smtp
+SYSAM_NOTIFICATION_SMTP_PORTNUMBER=25
+SYSAM_NOTIFICATION_SENDER_EMAIL=
+SYSAM_NOTIFICATION_RECIPIENT_EMAIL=
+SYSAM_NOTIFICATION_EMAIL_SEVERITY=NONE
+
+#Install
+#-------
+-fileOverwrite_
+
+#Sybase Control Center Service
+#-----------------------------
+CONFIG_SCC_HTTP_PORT=38282
+CONFIG_SCC_HTTPS_PORT=38283
+
+#Sybase Control Center - Configure RMI Port
+#------------------------------------------
+SCC_RMI_PORT_NUMBER=39999
+
+#Sybase Control Center - Security Login Modules
+#----------------------------------------------
+CONFIG_SCC_CSI_SCCADMIN_PWD=password
+CONFIG_SCC_CSI_UAFADMIN_PWD=password
+
+#Start Sybase Control Center
+#---------------------------
+START_SCC_SERVER=No
+

@@ -1,0 +1,111 @@
+#!/bin/bash
+
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+
+case "$1" in
+  -v|--version)
+    version="$2"
+esac
+
+env_dir="${OPENSHIFT_IQ_DIR}/env"
+
+echo 'Installing IQ'
+IQ_TMP_DIR=tmp
+# working IQ16.0 dir on 10.1.17.116:/IQ16.0/
+tar -zxf $OPENSHIFT_IQ_DIR/versions/${OPENSHIFT_IQ_VERSION}/iq160_LinuxAMD64.tar.gz -C "${OPENSHIFT_IQ_DIR}/${IQ_TMP_DIR}/"
+echo 'IQ installation binary extracted'
+
+# Build IQ Silent Installation Property File
+cp ${OPENSHIFT_IQ_DIR}/versions/shared/silent.template ${OPENSHIFT_IQ_DIR}/${IQ_TMP_DIR}/silent.properties
+sed -i "s@USER_INSTALL_DIR=@&${SYBASE}@" ${OPENSHIFT_IQ_DIR}/${IQ_TMP_DIR}/silent.properties
+sed -i "s@-fileOverwrite_@&${SYBASE}/sybuninstall/IQSuite/uninstall.lax=Yes@" ${OPENSHIFT_IQ_DIR}/${IQ_TMP_DIR}/silent.properties
+echo 'silent.properties configured'
+
+# Perform silent installation
+${OPENSHIFT_IQ_DIR}${IQ_TMP_DIR}/setup.bin -f ${OPENSHIFT_IQ_DIR}${IQ_TMP_DIR}/silent.properties -i silent
+echo 'IQ installed'
+
+#source ${SYBASE}/SYBASE.sh
+source ${SYBASE}/IQ.sh
+
+echo "Creating demo database"
+cd $IQDIR16/demo
+sh ./mkiqdemo.sh -y
+echo "Demo database created"
+
+IQ_DB_NAME=iqdb_16
+IQ_USERNAME=DBA
+IQ_PASSWORD=sql
+IQ_DB_PORT=5788
+set_env_var 'IQ_DB_NAME' ${IQ_DB_NAME} $env_dir
+set_env_var 'IQ_USERNAME' ${IQ_USERNAME} $env_dir
+set_env_var 'IQ_PASSWORD' ${IQ_PASSWORD} $env_dir
+set_env_var 'IQ_DB_PORT' ${IQ_DB_PORT} $env_dir
+
+# Prepare db creation files
+cd ${OPENSHIFT_IQ_DIR}work
+cp ${OPENSHIFT_IQ_DIR}versions/shared/test.cfg ./
+cp ${OPENSHIFT_IQ_DIR}versions/shared/create_database.template ./create_database.sql
+cp ${OPENSHIFT_IQ_DIR}versions/shared/create_dbspaces.template ./create_dbspaces.sql
+cp ${OPENSHIFT_IQ_DIR}versions/shared/.odbc.ini ./
+cp ${OPENSHIFT_IQ_DIR}versions/shared/${IQ_DB_NAME}.cfg ./
+cp ${OPENSHIFT_IQ_DIR}versions/shared/option_16.sql ./
+
+# Prepare create_database.sql
+sed -i "s@CREATE DATABASE@& \'${OPENSHIFT_IQ_DIR}data/${IQ_DB_NAME}.db\'@" ${OPENSHIFT_IQ_DIR}/work/create_database.sql
+sed -i "s@IQ PATH@& \'${OPENSHIFT_IQ_DIR}data/${IQ_DB_NAME}.iq\'@" ${OPENSHIFT_IQ_DIR}/work/create_database.sql
+sed -i "s@TEMPORARY PATH@& \'${OPENSHIFT_IQ_DIR}data/${IQ_DB_NAME}.iqtmp\'@" ${OPENSHIFT_IQ_DIR}/work/create_database.sql
+
+# Prepare create_dbspaces.sql 
+sed -i "s@FileHist1_16@& \'${OPENSHIFT_IQ_DIR}data/file1_16\'@" ${OPENSHIFT_IQ_DIR}/work/create_dbspaces.sql
+sed -i "s@FILE FileHist2_16@& \'${OPENSHIFT_IQ_DIR}data/file2_16\'@" ${OPENSHIFT_IQ_DIR}/work/create_dbspaces.sql
+
+# Start demo database using test.cfg
+cd ${OPENSHIFT_IQ_DIR}/work
+start_iq @test.cfg ${SYBASE}/IQ-16_0/demo/iqdemo.db
+echo "Demo database started"
+
+# Create a new database 
+export ODBCINI=${OPENSHIFT_IQ_DIR}work/.odbc.ini
+
+dbisql -c "DSN=test_16" -nogui ${OPENSHIFT_IQ_DIR}work/create_database.sql
+stop_iq -stop all
+start_iq @${IQ_DB_NAME}.cfg ${OPENSHIFT_IQ_DIR}data/${IQ_DB_NAME}.db
+dbisql -c "DSN=${IQ_DB_NAME}" -nogui ${OPENSHIFT_IQ_DIR}work/create_dbspaces.sql
+dbisql -c "DSN=${IQ_DB_NAME}" -nogui ${OPENSHIFT_IQ_DIR}work/option_16.sql
+stop_iq -stop all
+
+# Clean up 
+cd ${OPENSHIFT_IQ_DIR}
+rm -rf ${IQ_TMP_DIR}/
+cd ${OPENSHIFT_IQ_DIR}/work
+rm -r create_database.sql create_dbspaces.sql option_16.sql test.cfg
+
+client_result ""
+client_result "============================="
+client_result "IQ ${version} database added"
+client_result ""
+client_result "Please use the following .odbc.ini parameters:"
+client_result "-----------------------------"
+client_result "[${IQ_DB_NAME}]"
+client_result "Userid=${IQ_USERNAME}"
+client_result "Password=${IQ_PASSWORD}"
+client_result "EngineName=${IQ_DB_NAME}"
+client_result "DatabaseName=${IQ_DB_NAME}"
+client_result "DatabaseFile=${IQ_DB_NAME}.db"
+client_result "CommLinks=tcpip(host=${OPENSHIFT_IQ_DB_HOST};port=${IQ_DB_PORT})"
+client_result "AutoStop=no"
+#client_result "----- end of .odbc.ini ------"
+#client_result "To set Environment Variables: "
+#client_result "  source ${SYBASE}/SYBASE.sh"
+#client_result "  source ${SYBASE}/IQ.sh"
+client_result "============================="
+client_result ""
+
+cart_props "IQ_DB_NAME=${IQ_DB_NAME}"
+cart_props "user=${IQ_USERNAME}"
+cart_props "password=${IQ_PASSWORD}"
+cart_props "db_host=${OPENSHIFT_IQ_DB_HOST}"
+cart_props "db_port=${IQ_DB_PORT}"
+
+set_app_info "Database Name: ${IQ_DB_NAME}; DB User Name: ${IQ_USERNAME}; DB User Password: ${IQ_PASSWORD}; DB Host: ${OPENSHIFT_IQ_DB_HOST}; DB Port: ${IQ_DB_PORT}" 

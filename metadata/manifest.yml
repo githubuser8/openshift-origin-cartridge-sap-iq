@@ -1,0 +1,52 @@
+Name: sap-iq
+Namespace: SAP-IQ
+Architecture: noarch
+Cartridge-Short-Name: IQ
+Cartridge-Version:    '0.0.1'
+Compatible-Versions:   [0.0.1]
+Cartridge-Vendor:     redhat
+Display-Name: SAP IQ 16.0
+Description: "SAP IQ is a Column Store Analytics Server"
+Version:   '16.0'
+Versions:  ['16.0']
+License:   Express Edition
+Vendor:    SAP 
+Website: http://www.sap.com
+Categories:
+  - service
+  - database
+  - embedded
+Help-Topics:
+  - "TBD"
+Cart-Data:
+  - Key: "username"
+    Type: cart_data
+    Description: "Admin user on IQ database"
+  - Key: "password"
+    Type: cart_data
+    Description: "Password for Admin user on IQ database"
+  - Key: database_name
+    Type: cart_data
+    Description: "IQ DB name"
+Provides:
+  - sap-iq-16.0
+  - "iq"
+  - "iq(version) = 16.0"
+Publishes:
+  publish-db-connection-info:
+    Type: "ENV:NET_TCP:db:connection-info"
+Scaling:
+  Min: 1
+  Max: 1
+Endpoints:
+  - Private-IP-Name:   DB_HOST
+    Private-Port-Name: DB_PORT
+    Private-Port:      5434
+    Public-Port-Name:  DB_PROXY_PORT
+Version-Overrides:
+  '16.0':
+    Display-Name: IQ Database 16.0 
+    Provides:
+      - sap-iq-16.0
+      - "iq"
+      - "iq(version) = 16.0"

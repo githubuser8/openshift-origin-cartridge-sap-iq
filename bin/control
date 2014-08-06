@@ -1,0 +1,151 @@
+#!/bin/bash
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+#source ${SYBASE}/SYBASE.sh
+source ${SYBASE}/IQ.sh
+export ODBCINI=${OPENSHIFT_IQ_DIR}work/.odbc.ini
+
+function check_license {
+# Display License File
+client_result "======= SAP License ========="
+while read -r line; do client_result "$line"; done < $OPENSHIFT_IQ_DIR/license/license.txt
+client_result "==== End of SAP License ====="
+client_result ""
+client_result "======= MUST READ ==========="
+client_result "You haven't accepted the license agreement,"
+client_result "thus the use of the cartridge is prohibited."
+client_result "-----------------------------"
+client_result "To indicate that you accept this license, "
+client_result "please set the ACCEPT_SAP_LICENSE_IQ variable to "Y" with command:"
+client_result "  rhc set-env ACCEPT_SAP_LICENSE_IQ=Y --app ${OPENSHIFT_APP_NAME}"
+client_result "then start the cartridge with command:"
+client_result "  rhc cartridge-start sap-iq-${OPENSHIFT_IQ_VERSION} --app ${OPENSHIFT_APP_NAME}"
+client_result "============================="
+return 0
+}
+
+
+function _start_iq {
+  cd ${OPENSHIFT_IQ_DIR}/work
+  start_iq @${IQ_DB_NAME}.cfg ${OPENSHIFT_IQ_DIR}data/${IQ_DB_NAME}.db
+}
+
+function _stop_iq {
+  stop_iq -stop all
+}
+
+function _is_running {
+  dbping -q -c DSN=${IQ_DB_NAME} &> /dev/null
+  return $?
+}
+
+function wait_for_availability {
+  for i in {1..30}; do
+    _is_running && return 0
+    sleep 1
+  done
+  return 1
+}
+
+function start {
+if [ ${ACCEPT_SAP_LICENSE_IQ} == Y ] || [ ${ACCEPT_SAP_LICENSE_IQ} == y ]; then
+  if ! _is_running; then
+    echo "Starting IQ"
+    _start_iq
+    wait_for_availability || error "Could not start IQ" 70
+    sleep 30
+    echo "IQ started"
+  else
+    echo "IQ already running"
+  fi
+  return 0
+else
+  check_license
+fi
+}
+
+function stop {
+  if _is_running; then
+    _stop_iq
+    if _is_running; then
+      error "Could not stop IQ" 70
+    else
+      echo "IQ stopped"
+    fi
+  else
+    echo "IQ already stopped"
+  fi
+  return 0
+}
+
+function status {
+  if _is_running; then
+    client_result "IQ is running"
+  else
+    client_result "IQ is stopped"
+  fi
+
+  exit 0
+}
+
+function pre_snapshot {
+
+  echo "${OPENSHIFT_IQ_VERSION}" > $OPENSHIFT_DATA_DIR/iq_version
+
+  if [ -f ${OPENSHIFT_DATA_DIR}/iq-backup.tgz ]
+  then
+    rm -f ${OPENSHIFT_DATA_DIR}/iq-backup.tgz
+  fi
+  cd ${OPENSHIFT_IQ_DIR}/
+  tar zcf ${OPENSHIFT_DATA_DIR}/iq-backup.tgz data/ work/
+}
+
+function pre_restore {
+  return 0
+}
+
+function post_restore {
+if [ -f $OPENSHIFT_DATA_DIR/iq-backup.tgz ]; then
+  cd ${OPENSHIFT_IQ_DIR}
+  rm -rf data work
+  /bin/tar zxf $OPENSHIFT_DATA_DIR/iq-backup.tgz
+  if [ -f $OPENSHIFT_IQ_DIR/data/${IQ_DB_NAME}.db ] && [ -f $OPENSHIFT_IQ_DIR/data/${IQ_DB_NAME}.iq ] && [ -f $OPENSHIFT_IQ_DIR/data/${IQ_DB_NAME}.iqtmp ]; then
+    start
+    rm -f $OPENSHIFT_DATA_DIR/iq-backup.tgz
+  else
+    echo "IQ restore attempted but no data files found in backup!" 1>&2
+  fi
+
+else 
+  echo "IQ restore attempted but no backup found!" 1>&2
+  echo "$OPENSHIFT_DATA_DIR/iq-backup.tgz does not exist" 1>&2
+fi
+}
+
+case "$1" in
+  start)
+    start
+  ;;
+  stop)
+    stop
+  ;;
+  status)
+    status
+  ;;
+  restart)
+    stop
+    start
+  ;;
+  pre-snapshot)
+    pre_snapshot
+  ;;
+  pre-restore)
+    pre_restore
+  ;;
+  post-restore)
+    post_restore
+  ;;
+  *)
+    echo 0
+  ;;
+esac
+
