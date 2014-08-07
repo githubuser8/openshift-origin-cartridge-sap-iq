@@ -8,6 +8,7 @@ Cartridge-Vendor:     redhat
 Display-Name: SAP IQ 16.0
 Description: "SAP IQ is a Column Store Analytics Server"
 Version:   '16.0'
+Source-Url: git://github.com/githubuser8/openshift-origin-cartridge-sap-iq.git
 Versions:  ['16.0']
 License:   Express Edition
 Vendor:    SAP 
