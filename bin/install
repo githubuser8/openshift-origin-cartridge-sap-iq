@@ -11,8 +11,10 @@ env_dir="${OPENSHIFT_IQ_DIR}/env"
 
 echo 'Installing IQ'
 IQ_TMP_DIR=tmp
-# working IQ16.0 dir on 10.1.17.116:/IQ16.0/
-tar -zxf $OPENSHIFT_IQ_DIR/versions/${OPENSHIFT_IQ_VERSION}/iq160_LinuxAMD64.tar.gz -C "${OPENSHIFT_IQ_DIR}/${IQ_TMP_DIR}/"
+mkdir -p $OPENSHIFT_IQ_DIR/versions/${OPENSHIFT_IQ_VERSION}/
+cd $OPENSHIFT_IQ_DIR/versions/${OPENSHIFT_IQ_VERSION}/
+wget http://d14alp1cwvo3z3.cloudfront.net/16.0/Express/iq160_LinuxAMD64.tgz
+tar -zxf $OPENSHIFT_IQ_DIR/versions/${OPENSHIFT_IQ_VERSION}/iq160_LinuxAMD64.tgz -C "${OPENSHIFT_IQ_DIR}/${IQ_TMP_DIR}/"
 echo 'IQ installation binary extracted'
 
 # Build IQ Silent Installation Property File
