@@ -4,7 +4,7 @@ Architecture: noarch
 Cartridge-Short-Name: IQ
 Cartridge-Version:    '0.0.1'
 Compatible-Versions:   [0.0.1]
-Cartridge-Vendor:     redhat
+Cartridge-Vendor:     sap
 Display-Name: SAP IQ 16.0
 Description: "SAP IQ is a Column Store Analytics Server"
 Version:   '16.0'
